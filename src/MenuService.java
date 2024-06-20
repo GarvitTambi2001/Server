@@ -1,5 +1,4 @@
 import java.util.List;
-import java.util.UUID;
 import com.google.gson.Gson;
 
 public class MenuService {
@@ -27,7 +26,9 @@ public class MenuService {
         return gson.toJson(menus);
     }
 
-    public static String generateMenuId() {
-        return UUID.randomUUID().toString();
+    public String viewTopRecommendations() {
+        List<MenuDTO> topRecommendations = menuDAO.getTopRecommendations();
+        Gson gson = new Gson();
+        return gson.toJson(topRecommendations);
     }
 }

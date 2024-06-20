@@ -1,18 +1,20 @@
 import java.math.BigDecimal;
 
 public class MenuDTO {
-    private String menuId;
-    private BigDecimal prices;
+
+    private String Name;
+    private BigDecimal menuId;
+    private BigDecimal price;
     private String availabilityStatus;
     private String mealType;
     private BigDecimal score;
 
-    public void setMenuId(String menuId) {
+    public void setMenuId(BigDecimal menuId) {
         this.menuId = menuId;
     }
 
-    public void setPrice(BigDecimal prices) {
-        this.prices = prices;
+    public void setPrice(BigDecimal price) {
+        this.price = price;
     }
 
     public void setAvailabilityStatus(String availabilityStatus) {
@@ -27,12 +29,16 @@ public class MenuDTO {
         this.score = score;
     }
 
-    public String getMenuId() {
+    public void setName(String name) {
+        Name = name;
+    }
+
+    public BigDecimal getMenuId() {
         return menuId;
     }
 
     public BigDecimal getPrice() {
-        return prices;
+        return price;
     }
 
     public String getAvailabilityStatus() {
@@ -45,5 +51,8 @@ public class MenuDTO {
 
     public BigDecimal getScore() {
         return score;
+    }
+    public String getName() {
+        return Name;
     }
 }

@@ -4,6 +4,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.net.Socket;
+import java.sql.SQLException;
 import java.util.List;
 
 import com.google.gson.Gson;
@@ -70,6 +71,9 @@ public class ClientHandler extends Thread {
                         break;
                     case "ROLLOUT_NEXT_DAY_MENU_REQUEST":
                         handleRollOutNextDayMenuRequest(parts, out);
+                        break;
+                    case "GIVE_FEEDBACK_REQUEST":
+                        handleGiveFeedbackRequest(parts[1], out);
                         break;
                     default:
                         out.println("UNKNOWN_REQUEST");
@@ -153,12 +157,12 @@ public class ClientHandler extends Thread {
     private void handleViewChefRecommendationsRequest(PrintWriter out) {
         try {
             List<ChefRecommendationDTO> recommendations = chefRecommendationService.getChefRecommendations();
-            StringBuilder response = new StringBuilder("CHEF_RECOMMENDATIONS");
+            StringBuilder response = new StringBuilder("VIEW_RECOMMENDATIONS_RESPONSE");
             for (ChefRecommendationDTO recommendation : recommendations) {
                 response.append(";")
                         .append("MenuId: ").append(recommendation.getMenuId())
                         .append(", MenuName: ").append(recommendation.getMenuName())
-                        .append(", VoteCount: ").append(recommendation.getVoteCount());
+                        .append(", Score: ").append(recommendation.getVoteCount());
             }
             out.println(response);
         }catch(Exception error){
@@ -198,4 +202,24 @@ public class ClientHandler extends Thread {
             out.println("ROLLOUT_NEXT_DAY_MENU_RESPONSE;FAILURE");
         }
     }
-}
+
+    private void handleGiveFeedbackRequest(String jsonFeedback, PrintWriter out) {
+        try {
+            Gson gson = new Gson();
+            FeedbackDTO feedbackDTO = gson.fromJson(jsonFeedback, FeedbackDTO.class);
+            String employeeId = feedbackDTO.getEmployeeId();
+            Integer menuId = feedbackDTO.getMenuId();
+            String comment = feedbackDTO.getComment();
+            int rating = feedbackDTO.getRating();
+
+            feedbackService.submitFeedback(employeeId, menuId, comment, rating);
+            out.println("GIVE_FEEDBACK_RESPONSE;SUCCESS");
+        } catch (SQLException e) {
+            System.err.println();
+            out.println("GIVE_FEEDBACK_RESPONSE;FAILURE");
+        } catch (Exception e) {
+            System.err.println();
+            out.println("GIVE_FEEDBACK_RESPONSE;FAILURE");
+        }
+    }
+    }

@@ -22,9 +22,11 @@ public class ChefRecommendationDAO {
 
     public List<ChefRecommendationDTO> getChefRecommendations() {
         List<ChefRecommendationDTO> recommendations = new ArrayList<>();
-        String query = "SELECT cr.MenuId, m.Name AS MenuName, m.Score AS score, cr.VoteCount FROM ChefRecommendation cr "
+        String query = "SELECT cr.MenuId, m.Name AS MenuName, m.Score AS score, cr.VoteCount "
+                + "FROM ChefRecommendation cr "
                 + "JOIN Menu m ON cr.MenuId = m.MenuId "
-                + "WHERE cr.CreatedDate >= CURDATE() ORDER BY cr.VoteCount DESC";
+                + "WHERE DATE(cr.CreatedDate) = CURDATE() "
+                + "ORDER BY cr.VoteCount DESC";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(query);
@@ -60,7 +62,7 @@ public class ChefRecommendationDAO {
 
     public List<ChefRecommendationDTO> getTodayChefRecommendations() {
         List<ChefRecommendationDTO> recommendations = new ArrayList<>();
-        String query = "SELECT * FROM ChefRecommendation WHERE CreatedDate >= CURDATE()";
+        String query = "SELECT * FROM ChefRecommendation WHERE DATE(CreatedDate) >= CURDATE()";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(query);

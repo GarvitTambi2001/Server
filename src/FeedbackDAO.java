@@ -25,4 +25,19 @@ public class FeedbackDAO {
         }
         return feedbackList;
     }
+
+    public void insertFeedback(FeedbackDTO feedback) throws SQLException {
+        String query = "INSERT INTO feedback (EmployeeId, MenuId, Comment, Rating) VALUES (?, ?, ?, ?)";
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+
+                statement.setString(1, feedback.getEmployeeId());
+                statement.setInt(2, feedback.getMenuId());
+                statement.setString(3, feedback.getComment());
+                statement.setInt(4, feedback.getRating());
+                statement.addBatch();
+
+                statement.executeBatch();
+        }
+    }
 }

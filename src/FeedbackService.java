@@ -1,16 +1,22 @@
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class FeedbackService {
 
     private final FeedbackDAO feedbackDAO;
 
-    private static final List<String> GOOD_WORDS = List.of("good", "excellent", "great", "fantastic", "amazing");
-    private static final List<String> BAD_WORDS = List.of("bad", "terrible", "awful", "poor", "worst");
-    private static final List<String> NEUTRAL_WORDS = List.of("okay", "fine", "average", "mediocre", "decent");
+    private static final Set<String> GOOD_WORDS = new HashSet<>(Arrays.asList(
+            "good", "great", "excellent", "amazing", "awesome", "fantastic", "positive", "nice", "wonderful", "happy"
+    ));
+
+    private static final Set<String> BAD_WORDS = new HashSet<>(Arrays.asList(
+            "bad", "terrible", "awful", "horrible", "poor", "negative", "worst", "sad", "angry", "hate"
+    ));
+
+    private static final Set<String> NEUTRAL_WORDS = new HashSet<>(Arrays.asList(
+            "okay", "fine", "average", "mediocre", "neutral", "so-so"
+    ));
+
 
     public FeedbackService() {
         this.feedbackDAO = new FeedbackDAO();
@@ -37,7 +43,7 @@ public class FeedbackService {
         }
     }
 
-    public void submitFeedback(String employeeId,  Integer menuId, String comment, int rating) throws SQLException {
+    public void submitFeedback(String employeeId,  Integer menuId, String comment, int rating) throws SQLException,FeedbackAlreadyExistsException {
             String sentiment = getSentiment(comment);
             FeedbackDTO feedback = new FeedbackDTO();
             feedback.setEmployeeId(employeeId);
@@ -49,17 +55,45 @@ public class FeedbackService {
     }
 
     private String getSentiment(String comment) {
+        int sentimentScore = generateSentimentScore(comment);
+        return determineOverallSentiment(sentimentScore);
+    }
+
+    private int generateSentimentScore(String comment){
+        int sentimentScore = 0;
+        boolean negate = false;
+
         for (String word : comment.split("\\s+")) {
             String lowerCaseWord = word.toLowerCase();
-            if (GOOD_WORDS.contains(lowerCaseWord)) {
-                return "positive";
-            } else if (BAD_WORDS.contains(lowerCaseWord)) {
-                return "negative";
-            } else if (NEUTRAL_WORDS.contains(lowerCaseWord)) {
-                return "neutral";
+            if (lowerCaseWord.equals("not")) {
+                negate = true;
+            } else {
+                int wordScore = 0;
+                if (GOOD_WORDS.contains(lowerCaseWord)) {
+                    wordScore = 1;
+                } else if (BAD_WORDS.contains(lowerCaseWord)) {
+                    wordScore = -1;
+                } else if (NEUTRAL_WORDS.contains(lowerCaseWord)) {
+                    wordScore = 0;
+                }
+                if (negate) {
+                    wordScore = -wordScore;
+                    negate = false;
+                }
+                sentimentScore += wordScore;
             }
         }
-        return "neutral";
+        return sentimentScore;
+    }
+
+    private static String determineOverallSentiment(int sentimentScore) {
+        if (sentimentScore > 0) {
+            return "positive";
+        } else if (sentimentScore < 0) {
+            return "negative";
+        } else {
+            return "neutral";
+        }
     }
 
     private double analyzeSentiment(String sentiment) {

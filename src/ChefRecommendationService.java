@@ -1,3 +1,4 @@
+import java.sql.SQLException;
 import java.util.List;
 
 public class ChefRecommendationService {
@@ -15,16 +16,10 @@ public class ChefRecommendationService {
         return chefRecommendationDAO.getTodayChefRecommendations();
     }
 
-    public boolean voteForRecommendations(String[] menuIds) {
-        try {
+    public void voteForRecommendations(String[] menuIds, String employeeId) throws VoteAlreadyGivenException, SQLException {
             for (String menuId : menuIds) {
-                chefRecommendationDAO.increaseVoteCount(Integer.parseInt(menuId));
+                chefRecommendationDAO.increaseVoteCount(Integer.parseInt(menuId), employeeId);
             }
-            return true;
-        } catch (NumberFormatException e) {
-            System.err.println("Invalid MenuId format: " + e.getMessage());
-            return false;
-        }
     }
 
     public boolean rollOutNextDayMenu(String[] menuIds) {

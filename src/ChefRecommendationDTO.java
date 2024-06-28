@@ -10,6 +10,8 @@ public class ChefRecommendationDTO {
     private int voteCount;
     private Timestamp createdDate;
 
+    private String EmployeeId;
+
     public int getRecId() {
         return recId;
     }
@@ -34,6 +36,10 @@ public class ChefRecommendationDTO {
         return menuName;
     }
 
+    public String getEmployeeId() {
+        return EmployeeId;
+    }
+
     public void setMenuName(String menuName) {
         this.menuName = menuName;
     }
@@ -56,5 +62,9 @@ public class ChefRecommendationDTO {
 
     public void setScore(BigDecimal score) {
         this.score = score;
+    }
+
+    public void setEmployeeId(String employeeId) {
+        EmployeeId = employeeId;
     }
 }

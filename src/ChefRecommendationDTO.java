@@ -10,8 +10,6 @@ public class ChefRecommendationDTO {
     private int voteCount;
     private Timestamp createdDate;
 
-    private String EmployeeId;
-
     public int getRecId() {
         return recId;
     }

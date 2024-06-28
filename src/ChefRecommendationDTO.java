@@ -36,10 +36,6 @@ public class ChefRecommendationDTO {
         return menuName;
     }
 
-    public String getEmployeeId() {
-        return EmployeeId;
-    }
-
     public void setMenuName(String menuName) {
         this.menuName = menuName;
     }
@@ -64,7 +60,4 @@ public class ChefRecommendationDTO {
         this.score = score;
     }
 
-    public void setEmployeeId(String employeeId) {
-        EmployeeId = employeeId;
-    }
 }

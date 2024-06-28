@@ -74,10 +74,10 @@ public class MenuDAO {
         return menus;
     }
 
-    public List<MenuDTO> getTopRecommendations() {
+    public List<MenuDTO> getTopRecommendations(String numberOfRecommendations) {
         List<MenuDTO> topRecommendations = new ArrayList<>();
         try (Connection connection = DatabaseConnection.getConnection()) {
-            String query = "SELECT * FROM Menu WHERE AvailabilityStatus = 'Yes' ORDER BY Score DESC LIMIT 6";
+            String query = "SELECT * FROM Menu WHERE AvailabilityStatus = 'Yes' ORDER BY Score DESC LIMIT " + numberOfRecommendations;
             PreparedStatement preparedStatement = connection.prepareStatement(query);
             ResultSet resultSet = preparedStatement.executeQuery();
 

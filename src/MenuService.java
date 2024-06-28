@@ -26,8 +26,8 @@ public class MenuService {
         return gson.toJson(menus);
     }
 
-    public String viewTopRecommendations() {
-        List<MenuDTO> topRecommendations = menuDAO.getTopRecommendations();
+    public String viewTopRecommendations(String numberOfItems) {
+        List<MenuDTO> topRecommendations = menuDAO.getTopRecommendations(numberOfItems);
         Gson gson = new Gson();
         return gson.toJson(topRecommendations);
     }

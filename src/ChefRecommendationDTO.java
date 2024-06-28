@@ -57,4 +57,5 @@ public class ChefRecommendationDTO {
     public void setScore(BigDecimal score) {
         this.score = score;
     }
+
 }

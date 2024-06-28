@@ -14,9 +14,6 @@ public class ClientHandler extends Thread {
     private final AuthService authService;
     private final MenuService menuService;
     private final FeedbackService feedbackService;
-
-    private final ChefRecommendationDAO chefRecommendationDAO;
-
     private final ChefRecommendationService chefRecommendationService;
 
     public ClientHandler(Socket socket) {
@@ -24,7 +21,6 @@ public class ClientHandler extends Thread {
         this.authService = new AuthService();
         this.menuService = new MenuService();
         this.feedbackService = new FeedbackService();
-        this.chefRecommendationDAO = new ChefRecommendationDAO();
         this.chefRecommendationService = new ChefRecommendationService();
     }
 
@@ -57,14 +53,14 @@ public class ClientHandler extends Thread {
                         handleViewMenuRequest(out);
                         break;
                     case "VIEW_TOP_RECOMMENDATIONS":
-                        handleViewTopRecommendationsRequest(out);
+                        handleViewTopRecommendationsRequest(requestData,out);
                         break;
                     case "VIEW_CHEF_RECOMMENDATIONS":
                         System.out.println("Hi");
                         handleViewChefRecommendationsRequest(out);
                         break;
                     case "VOTE_RECOMMENDATION_REQUEST":
-                        handleVoteRecommendationRequest(parts, out);
+                        handleVoteRecommendationRequest(requestData, out);
                         break;
                     case "VIEW_VOTED_REPORT":
                         handleViewVotedReportRequest(out);
@@ -148,9 +144,9 @@ public class ClientHandler extends Thread {
         }
     }
 
-    private void handleViewTopRecommendationsRequest(PrintWriter out) {
+    private void handleViewTopRecommendationsRequest(String requestData, PrintWriter out) {
         feedbackService.updateMenuScoresAccToFeedback();
-        String recommendations = menuService.viewTopRecommendations();
+        String recommendations = menuService.viewTopRecommendations(requestData);
         out.println(recommendations);
     }
 
@@ -170,13 +166,17 @@ public class ClientHandler extends Thread {
         }
     }
 
-    private void handleVoteRecommendationRequest(String[] parts, PrintWriter out) {
-        String[] menuIds = parts[1].split(",");
-        boolean success = chefRecommendationService.voteForRecommendations(menuIds);
-        if (success) {
+    private void handleVoteRecommendationRequest(String requestData, PrintWriter out) {
+        try {
+            String[] parts = requestData.split(";");
+            String[] menuIds = parts[0].split(",");
+            String employeeId = parts[1];
+            chefRecommendationService.voteForRecommendations(menuIds, employeeId);
             out.println("VOTE_RECOMMENDATION_RESPONSE;SUCCESS");
-        } else {
-            out.println("VOTE_RECOMMENDATION_RESPONSE;FAILURE");
+        }catch (VoteAlreadyGivenException e) {
+            out.println("VOTE_RECOMMENDATION_RESPONSE;FAILURE;" + e.getMessage());
+        }catch (SQLException e) {
+            out.println("VOTE_RECOMMENDATION_RESPONSE;FAILURE" + e.getMessage());
         }
     }
 
@@ -214,12 +214,11 @@ public class ClientHandler extends Thread {
 
             feedbackService.submitFeedback(employeeId, menuId, comment, rating);
             out.println("GIVE_FEEDBACK_RESPONSE;SUCCESS");
-        } catch (SQLException e) {
+        }catch (FeedbackAlreadyExistsException e) {
+            out.println("GIVE_FEEDBACK_RESPONSE;FAILURE;" + e.getMessage());
+        }catch (Exception e) {
             System.err.println();
-            out.println("GIVE_FEEDBACK_RESPONSE;FAILURE");
-        } catch (Exception e) {
-            System.err.println();
-            out.println("GIVE_FEEDBACK_RESPONSE;FAILURE");
+            out.println("GIVE_FEEDBACK_RESPONSE;FAILURE" + e.getMessage());
         }
     }
     }

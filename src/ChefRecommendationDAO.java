@@ -7,18 +7,44 @@ import java.util.List;
 
 public class ChefRecommendationDAO {
 
-    public void increaseVoteCount(int menuId) {
-        String query = "UPDATE ChefRecommendation SET VoteCount = VoteCount + 1 WHERE MenuId = ?";
+    public void increaseVoteCount(int menuId, String employeeId) throws VoteAlreadyGivenException, SQLException {
+        final String CHECK_QUERY = "SELECT COUNT(*) FROM EmployeeChoice WHERE EmployeeId = ? AND MenuId = ? AND DATE(CreatedDate) = CURDATE()";
+        final String UPDATE_QUERY = "UPDATE ChefRecommendation SET VoteCount = VoteCount + 1 WHERE MenuId = ?";
+        final String INSERT_QUERY = "INSERT INTO EmployeeChoice (EmployeeId, MenuId, CreatedDate) VALUES (?, ?, CURDATE())";
 
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(query)) {
+             PreparedStatement checkStatement = connection.prepareStatement(CHECK_QUERY);
+             PreparedStatement updateStatement = connection.prepareStatement(UPDATE_QUERY);
+             PreparedStatement insertStatement = connection.prepareStatement(INSERT_QUERY)) {
 
-            statement.setInt(1, menuId);
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            System.err.println("Error updating vote count: " + e.getMessage());
+            if (hasAlreadyVoted(checkStatement, employeeId, menuId)) {
+                throw new VoteAlreadyGivenException("You have already voted for this menu item today.");
+            }
+
+            incrementVoteCount(updateStatement, menuId);
+            recordVote(insertStatement, employeeId, menuId);
         }
     }
+
+    private boolean hasAlreadyVoted(PreparedStatement checkStatement, String employeeId, int menuId) throws SQLException {
+        checkStatement.setString(1, employeeId);
+        checkStatement.setInt(2, menuId);
+        try (ResultSet resultSet = checkStatement.executeQuery()) {
+            return resultSet.next() && resultSet.getInt(1) > 0;
+        }
+    }
+
+    private void incrementVoteCount(PreparedStatement updateStatement, int menuId) throws SQLException {
+        updateStatement.setInt(1, menuId);
+        updateStatement.executeUpdate();
+    }
+
+    private void recordVote(PreparedStatement insertStatement, String employeeId, int menuId) throws SQLException {
+        insertStatement.setString(1, employeeId);
+        insertStatement.setInt(2, menuId);
+        insertStatement.executeUpdate();
+    }
+
 
     public List<ChefRecommendationDTO> getChefRecommendations() {
         List<ChefRecommendationDTO> recommendations = new ArrayList<>();
@@ -48,7 +74,7 @@ public class ChefRecommendationDAO {
     }
 
     public void insertChefRecommendation(int menuId) {
-        String query = "INSERT INTO ChefRecommendation (MenuId, VoteCount, CreatedDate) VALUES (?, 0, CURRENT_TIMESTAMP)";
+        String query = "INSERT INTO ChefRecommendation (MenuId, VoteCount, CreatedDate) VALUES (?, 0, CURDATE())";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {

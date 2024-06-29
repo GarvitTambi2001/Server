@@ -15,8 +15,9 @@ public class ClientHandler extends Thread {
     private final MenuService menuService;
     private final FeedbackService feedbackService;
     private final ChefRecommendationService chefRecommendationService;
-
     private final UserSessionService userSessionService;
+
+    private final NotificationService notificationService;
 
     public ClientHandler(Socket socket) {
         this.socket = socket;
@@ -25,6 +26,7 @@ public class ClientHandler extends Thread {
         this.feedbackService = new FeedbackService();
         this.chefRecommendationService = new ChefRecommendationService();
         this.userSessionService = new UserSessionService();
+        this.notificationService = new NotificationService();
     }
 
     public void run() {
@@ -74,8 +76,10 @@ public class ClientHandler extends Thread {
                         handleGiveFeedbackRequest(parts[1], out);
                         break;
                     case "USER_SESSION_REQUEST":
-                        handleUserSessionRequest(parts[1], out);
+                        handleUserSessionRequest(parts[1]);
                         break;
+                    case "VIEW_NOTIFICATIONS_REQUEST":
+                        handleViewNotificationsRequest(out);
                     default:
                         out.println("UNKNOWN_REQUEST");
                 }
@@ -227,7 +231,7 @@ public class ClientHandler extends Thread {
         }
       }
 
-    private void handleUserSessionRequest(String data, PrintWriter out) {
+    private void handleUserSessionRequest(String data) {
         Gson gson = new Gson();
         UserSessionDTO sessionDTO = gson.fromJson(data, UserSessionDTO.class);
 
@@ -238,4 +242,19 @@ public class ClientHandler extends Thread {
             System.err.println("User Session Successfully recorded");
         }
     }
+
+    private void handleViewNotificationsRequest(PrintWriter out) {
+        try {
+            List<NotificationDTO> notifications = notificationService.getTodayNotifications();
+
+            StringBuilder response = new StringBuilder("VIEW_NOTIFICATIONS_RESPONSE");
+            for (NotificationDTO notification : notifications) {
+                String message = notification.getMessage();
+                response.append(";").append(message);
+            }
+            out.println(response);
+        } catch (SQLException e) {
+            out.println("VIEW_NOTIFICATIONS_RESPONSE;FAILURE");
+        }
     }
+}

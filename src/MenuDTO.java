@@ -9,9 +9,7 @@ public class MenuDTO {
     private String mealType;
     private BigDecimal score;
 
-    public void setMenuId(BigDecimal menuId) {
-        this.menuId = menuId;
-    }
+    public void setMenuId(BigDecimal menuId) { this.menuId = menuId; }
 
     public void setPrice(BigDecimal price) {
         this.price = price;

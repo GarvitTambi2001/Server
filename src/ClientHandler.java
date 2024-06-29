@@ -16,12 +16,15 @@ public class ClientHandler extends Thread {
     private final FeedbackService feedbackService;
     private final ChefRecommendationService chefRecommendationService;
 
+    private final UserSessionService userSessionService;
+
     public ClientHandler(Socket socket) {
         this.socket = socket;
         this.authService = new AuthService();
         this.menuService = new MenuService();
         this.feedbackService = new FeedbackService();
         this.chefRecommendationService = new ChefRecommendationService();
+        this.userSessionService = new UserSessionService();
     }
 
     public void run() {
@@ -56,7 +59,6 @@ public class ClientHandler extends Thread {
                         handleViewTopRecommendationsRequest(requestData,out);
                         break;
                     case "VIEW_CHEF_RECOMMENDATIONS":
-                        System.out.println("Hi");
                         handleViewChefRecommendationsRequest(out);
                         break;
                     case "VOTE_RECOMMENDATION_REQUEST":
@@ -70,6 +72,9 @@ public class ClientHandler extends Thread {
                         break;
                     case "GIVE_FEEDBACK_REQUEST":
                         handleGiveFeedbackRequest(parts[1], out);
+                        break;
+                    case "USER_SESSION_REQUEST":
+                        handleUserSessionRequest(parts[1], out);
                         break;
                     default:
                         out.println("UNKNOWN_REQUEST");
@@ -219,6 +224,18 @@ public class ClientHandler extends Thread {
         }catch (Exception e) {
             System.err.println();
             out.println("GIVE_FEEDBACK_RESPONSE;FAILURE" + e.getMessage());
+        }
+      }
+
+    private void handleUserSessionRequest(String data, PrintWriter out) {
+        Gson gson = new Gson();
+        UserSessionDTO sessionDTO = gson.fromJson(data, UserSessionDTO.class);
+
+        try {
+            userSessionService.logUserSession(sessionDTO);
+            System.out.println("User Session Successfully recorded");
+        } catch (SQLException e) {
+            System.err.println("User Session Successfully recorded");
         }
     }
     }

@@ -8,11 +8,11 @@ public class MenuService {
         this.menuDAO = new MenuDAO();
     }
 
-    public boolean addMenu(MenuDTO menu) {
+    public boolean addMenu(Menu menu) {
         return menuDAO.addMenu(menu);
     }
 
-    public boolean updateMenu(MenuDTO menu) {
+    public boolean updateMenu(Menu menu) {
         return menuDAO.updateMenu(menu);
     }
 
@@ -21,13 +21,13 @@ public class MenuService {
     }
 
     public String viewMenu() {
-        List<MenuDTO> menus = menuDAO.getAllMenus();
+        List<Menu> menus = menuDAO.getAllMenus();
         Gson gson = new Gson();
         return gson.toJson(menus);
     }
 
     public String viewTopRecommendations(String numberOfItems) {
-        List<MenuDTO> topRecommendations = menuDAO.getTopRecommendations(numberOfItems);
+        List<Menu> topRecommendations = menuDAO.getTopRecommendations(numberOfItems);
         Gson gson = new Gson();
         return gson.toJson(topRecommendations);
     }

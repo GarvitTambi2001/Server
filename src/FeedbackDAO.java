@@ -3,14 +3,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FeedbackDAO {
-    public List<FeedbackDTO> getAllFeedback() {
-        List<FeedbackDTO> feedbackList = new ArrayList<>();
+    public List<Feedback> getAllFeedback() {
+        List<Feedback> feedbackList = new ArrayList<>();
         try (Connection connection = DatabaseConnection.getConnection();
              Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery("SELECT * FROM Feedback")) {
 
             while (resultSet.next()) {
-                FeedbackDTO feedback = new FeedbackDTO();
+                Feedback feedback = new Feedback();
                 feedback.setEmployeeId(resultSet.getString("EmployeeId"));
                 feedback.setMenuId(resultSet.getInt("MenuId"));
                 feedback.setComment(resultSet.getString("Comment"));
@@ -26,7 +26,7 @@ public class FeedbackDAO {
         return feedbackList;
     }
 
-    public void insertFeedback(FeedbackDTO feedback) throws SQLException, FeedbackAlreadyExistsException {
+    public void insertFeedback(Feedback feedback) throws SQLException, FeedbackAlreadyExistsException {
         final String CHECK_QUERY = "SELECT COUNT(*) FROM feedback WHERE EmployeeId = ? AND MenuId = ? AND DATE(CreatedDate) = CURDATE()";
         final String INSERT_QUERY = "INSERT INTO feedback (EmployeeId, MenuId, Comment, Rating, Sentiments, CreatedDate) VALUES (?, ?, ?, ?, ?, CURDATE())";
 
@@ -42,7 +42,7 @@ public class FeedbackDAO {
         }
     }
 
-    private boolean isFeedbackAlreadyGiven(PreparedStatement checkStatement, FeedbackDTO feedback) throws SQLException {
+    private boolean isFeedbackAlreadyGiven(PreparedStatement checkStatement, Feedback feedback) throws SQLException {
         checkStatement.setString(1, feedback.getEmployeeId());
         checkStatement.setInt(2, feedback.getMenuId());
         try (ResultSet resultSet = checkStatement.executeQuery()) {
@@ -50,7 +50,7 @@ public class FeedbackDAO {
         }
     }
 
-    private void saveFeedback(PreparedStatement insertStatement, FeedbackDTO feedback) throws SQLException {
+    private void saveFeedback(PreparedStatement insertStatement, Feedback feedback) throws SQLException {
         insertStatement.setString(1, feedback.getEmployeeId());
         insertStatement.setInt(2, feedback.getMenuId());
         insertStatement.setString(3, feedback.getComment());
@@ -59,4 +59,34 @@ public class FeedbackDAO {
         insertStatement.executeUpdate();
     }
 
+    public List<Feedback> getLowRatedFeedbacks() throws SQLException {
+        String query =  "SELECT f.EmployeeId, f.Sentiments, f.MenuId, m.Name, f.Comment, avgTable.avgRating " +
+                "FROM Feedback f " +
+                "JOIN Menu m ON f.MenuId = m.MenuId " +
+                "JOIN (" +
+                "    SELECT f.MenuId, AVG(f.Rating) as avgRating " +
+                "    FROM Feedback f " +
+                "    GROUP BY f.MenuId " +
+                "    HAVING avgRating <= 2" +
+                ") as avgTable ON f.MenuId = avgTable.MenuId";
+        List<Feedback> feedbackList = new ArrayList<>();
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query);
+             ResultSet resultSet = statement.executeQuery()) {
+
+            while (resultSet.next()) {
+                Feedback feedback = new Feedback();
+                feedback.setMenuId(resultSet.getInt("MenuId"));
+                feedback.setEmployeeId(resultSet.getString("EmployeeId"));
+                feedback.setComment(resultSet.getString("Comment"));
+                feedback.setAvgRating(resultSet.getDouble("avgRating"));
+                feedback.setSentiments(resultSet.getString("Sentiments"));
+                feedback.setMenuName(resultSet.getString("Name"));
+                feedbackList.add(feedback);
+            }
+        }
+
+        return feedbackList;
+    }
 }

@@ -1,6 +1,6 @@
 import java.math.BigDecimal;
 
-public class MenuDTO {
+public class Menu {
 
     private String Name;
     private BigDecimal menuId;

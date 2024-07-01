@@ -1,6 +1,6 @@
 import java.util.Date;
 
-public class NotificationDTO {
+public class Notification {
     private String message;
     private Date createdDate;
 

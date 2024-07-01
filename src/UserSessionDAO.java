@@ -3,7 +3,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public class UserSessionDAO {
-    public void insertUserSession(UserSessionDTO session) throws SQLException {
+    public void insertUserSession(UserSession session) throws SQLException {
         String query = "INSERT INTO UserSession (EmployeeId, RequestType, Time) VALUES (?, ?, CURRENT_TIMESTAMP)";
 
         try (Connection connection = DatabaseConnection.getConnection();

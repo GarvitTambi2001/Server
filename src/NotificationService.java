@@ -8,7 +8,7 @@ public class NotificationService {
         this.notificationDAO = new NotificationDAO();
     }
 
-    public List<NotificationDTO> getTodayNotifications() throws SQLException {
+    public List<Notification> getTodayNotifications() throws SQLException {
         return notificationDAO.getTodayNotifications();
     }
 }

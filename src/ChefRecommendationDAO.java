@@ -46,8 +46,8 @@ public class ChefRecommendationDAO {
     }
 
 
-    public List<ChefRecommendationDTO> getChefRecommendations() {
-        List<ChefRecommendationDTO> recommendations = new ArrayList<>();
+    public List<ChefRecommendation> getChefRecommendations() {
+        List<ChefRecommendation> recommendations = new ArrayList<>();
         String query = "SELECT cr.MenuId, m.Name AS MenuName, m.Score AS score, cr.VoteCount "
                 + "FROM ChefRecommendation cr "
                 + "JOIN Menu m ON cr.MenuId = m.MenuId "
@@ -59,7 +59,7 @@ public class ChefRecommendationDAO {
              ResultSet resultSet = statement.executeQuery()) {
 
             while (resultSet.next()) {
-                ChefRecommendationDTO recommendation = new ChefRecommendationDTO();
+                ChefRecommendation recommendation = new ChefRecommendation();
                 recommendation.setMenuId(resultSet.getInt("MenuId"));
                 recommendation.setMenuName(resultSet.getString("MenuName"));
                 recommendation.setScore(resultSet.getBigDecimal("score"));
@@ -86,8 +86,8 @@ public class ChefRecommendationDAO {
         }
     }
 
-    public List<ChefRecommendationDTO> getTodayChefRecommendations() {
-        List<ChefRecommendationDTO> recommendations = new ArrayList<>();
+    public List<ChefRecommendation> getTodayChefRecommendations() {
+        List<ChefRecommendation> recommendations = new ArrayList<>();
         String query = "SELECT * FROM ChefRecommendation WHERE DATE(CreatedDate) >= CURDATE()";
 
         try (Connection connection = DatabaseConnection.getConnection();
@@ -95,7 +95,7 @@ public class ChefRecommendationDAO {
              ResultSet resultSet = statement.executeQuery()) {
 
             while (resultSet.next()) {
-                ChefRecommendationDTO recommendation = new ChefRecommendationDTO();
+                ChefRecommendation recommendation = new ChefRecommendation();
                 recommendation.setRecId(resultSet.getInt("RecId"));
                 recommendation.setMenuId(resultSet.getInt("MenuId"));
                 recommendation.setVoteCount(resultSet.getInt("VoteCount"));

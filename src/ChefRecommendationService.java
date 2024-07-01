@@ -8,11 +8,11 @@ public class ChefRecommendationService {
         this.chefRecommendationDAO = new ChefRecommendationDAO();
     }
 
-    public List<ChefRecommendationDTO> getChefRecommendations() {
+    public List<ChefRecommendation> getChefRecommendations() {
         return chefRecommendationDAO.getChefRecommendations();
     }
 
-    public List<ChefRecommendationDTO> getTodayChefRecommendations() {
+    public List<ChefRecommendation> getTodayChefRecommendations() {
         return chefRecommendationDAO.getTodayChefRecommendations();
     }
 

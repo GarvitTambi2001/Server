@@ -5,7 +5,7 @@ import java.util.List;
 
 public class MenuDAO {
 
-    public boolean addMenu(MenuDTO menu) {
+    public boolean addMenu(Menu menu) {
         String query = "INSERT INTO menu (Name, Price, AvailabilityStatus, MealType, Score) VALUES (?, ?, ?, ?, ?)";
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -22,7 +22,7 @@ public class MenuDAO {
         }
     }
 
-    public boolean updateMenu(MenuDTO menu) {
+    public boolean updateMenu(Menu menu) {
         String query = "UPDATE menu SET Name = ?, Price = ?, AvailabilityStatus = ?, MealType = ? WHERE MenuId = ?";
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -52,14 +52,14 @@ public class MenuDAO {
         }
     }
 
-    public List<MenuDTO> getAllMenus() {
-        List<MenuDTO> menus = new ArrayList<>();
+    public List<Menu> getAllMenus() {
+        List<Menu> menus = new ArrayList<>();
         String query = "SELECT * FROM menu";
         try (Connection connection = DatabaseConnection.getConnection();
              Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(query)) {
             while (resultSet.next()) {
-                MenuDTO menu = new MenuDTO();
+                Menu menu = new Menu();
                 menu.setMenuId(resultSet.getBigDecimal("MenuId"));
                 menu.setPrice(resultSet.getBigDecimal("Price"));
                 menu.setAvailabilityStatus(resultSet.getString("AvailabilityStatus"));
@@ -74,15 +74,15 @@ public class MenuDAO {
         return menus;
     }
 
-    public List<MenuDTO> getTopRecommendations(String numberOfRecommendations) {
-        List<MenuDTO> topRecommendations = new ArrayList<>();
+    public List<Menu> getTopRecommendations(String numberOfRecommendations) {
+        List<Menu> topRecommendations = new ArrayList<>();
         try (Connection connection = DatabaseConnection.getConnection()) {
             String query = "SELECT * FROM Menu WHERE AvailabilityStatus = 'Yes' ORDER BY Score DESC LIMIT " + numberOfRecommendations;
             PreparedStatement preparedStatement = connection.prepareStatement(query);
             ResultSet resultSet = preparedStatement.executeQuery();
 
             while (resultSet.next()) {
-                MenuDTO menu = new MenuDTO();
+                Menu menu = new Menu();
                 menu.setMenuId(resultSet.getBigDecimal("MenuId"));
                 menu.setName(resultSet.getString("Name"));
                 menu.setPrice(resultSet.getBigDecimal("Price"));

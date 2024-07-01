@@ -1,4 +1,4 @@
-public class UserSessionDTO {
+public class UserSession {
     private String employeeId;
     private String requestType;
 

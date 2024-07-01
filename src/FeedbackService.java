@@ -1,9 +1,11 @@
+import org.javatuples.Triplet;
 import java.sql.SQLException;
 import java.util.*;
 
 public class FeedbackService {
 
     private final FeedbackDAO feedbackDAO;
+    private final MenuDAO menuDAO;
 
     private static final Set<String> GOOD_WORDS = new HashSet<>(Arrays.asList(
             "good", "great", "excellent", "amazing", "awesome", "fantastic", "positive", "nice", "wonderful", "happy"
@@ -20,13 +22,14 @@ public class FeedbackService {
 
     public FeedbackService() {
         this.feedbackDAO = new FeedbackDAO();
+        this.menuDAO = new MenuDAO();
     }
 
     public void updateMenuScoresAccToFeedback() {
-        List<FeedbackDTO> feedbackList = feedbackDAO.getAllFeedback();
+        List<Feedback> feedbackList = feedbackDAO.getAllFeedback();
 
         Map<Integer, Double> scoreMap = new HashMap<>();
-        for (FeedbackDTO feedback : feedbackList) {
+        for (Feedback feedback : feedbackList) {
             int menuId = feedback.getMenuId();
             int rating = feedback.getRating();
             String sentiment = feedback.getSentiments();
@@ -45,7 +48,7 @@ public class FeedbackService {
 
     public void submitFeedback(String employeeId,  Integer menuId, String comment, int rating) throws SQLException,FeedbackAlreadyExistsException {
             String sentiment = getSentiment(comment);
-            FeedbackDTO feedback = new FeedbackDTO();
+            Feedback feedback = new Feedback();
             feedback.setEmployeeId(employeeId);
             feedback.setMenuId(menuId);
             feedback.setComment(comment);
@@ -96,6 +99,21 @@ public class FeedbackService {
         }
     }
 
+    public Map<Triplet<Integer,Double,String>, List<String>> getLowRatedMenuItems() throws SQLException {
+        List<Feedback> feedbackList = feedbackDAO.getLowRatedFeedbacks();
+        Map<Triplet<Integer,Double,String>, List<String>> menuFeedbackMap = new HashMap<>();
+
+        for (Feedback feedback : feedbackList) {
+            double sentimentScore = analyzeSentiment(feedback.getSentiments());
+            if (feedback.getRating() < 2 && sentimentScore < 0) {
+                Triplet<Integer,Double,String> key = Triplet.with(feedback.getMenuId(),feedback.getAvgRating(),feedback.getMenuName());
+                menuFeedbackMap.computeIfAbsent(key, k -> new ArrayList<>()).add(feedback.getComment());
+            }
+        }
+
+        return menuFeedbackMap;
+    }
+
     private double analyzeSentiment(String sentiment) {
         switch (sentiment.toLowerCase()) {
             case "positive":
@@ -107,5 +125,9 @@ public class FeedbackService {
             default:
                 return 0.0;
         }
+    }
+
+    public void deleteMenuItem(String menuId) throws SQLException {
+        menuDAO.deleteMenu(menuId);
     }
 }

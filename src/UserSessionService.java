@@ -8,7 +8,7 @@ public class UserSessionService {
         this.userSessionDAO = new UserSessionDAO();
     }
 
-    public void logUserSession(UserSessionDTO session) throws SQLException {
+    public void logUserSession(UserSession session) throws SQLException {
         userSessionDAO.insertUserSession(session);
     }
 }

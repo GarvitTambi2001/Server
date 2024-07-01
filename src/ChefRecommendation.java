@@ -1,7 +1,7 @@
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
-public class ChefRecommendationDTO {
+public class ChefRecommendation {
     private int recId;
     private int menuId;
     private String menuName;

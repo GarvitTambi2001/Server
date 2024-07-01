@@ -1,3 +1,6 @@
+import com.google.gson.Gson;
+import org.javatuples.Triplet;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -5,93 +8,80 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.net.Socket;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
-
-import com.google.gson.Gson;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ClientHandler extends Thread {
-    private final Socket socket;
+    private final BufferedReader in;
+    private final PrintWriter out;
     private final AuthService authService;
     private final MenuService menuService;
     private final FeedbackService feedbackService;
     private final ChefRecommendationService chefRecommendationService;
     private final UserSessionService userSessionService;
-
     private final NotificationService notificationService;
+    private final DiscardFeedbackService discardFeedbackService;
+    private final Map<String, Command> commandMap;
 
-    public ClientHandler(Socket socket) {
-        this.socket = socket;
+    public ClientHandler(Socket socket) throws IOException {
         this.authService = new AuthService();
         this.menuService = new MenuService();
         this.feedbackService = new FeedbackService();
         this.chefRecommendationService = new ChefRecommendationService();
         this.userSessionService = new UserSessionService();
         this.notificationService = new NotificationService();
+        this.discardFeedbackService = new DiscardFeedbackService();
+        this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        this.out = new PrintWriter(socket.getOutputStream(), true);
+        this.commandMap = new HashMap<>();
+        initCommandMap();
+    }
+
+    private void initCommandMap() {
+        commandMap.put(Constants.LOGIN_REQUEST, this::handleLoginRequest);
+        commandMap.put(Constants.ADD_MENU_REQUEST, this::handleAddMenuRequest);
+        commandMap.put(Constants.UPDATE_MENU_REQUEST, this::handleUpdateMenuRequest);
+        commandMap.put(Constants.DELETE_MENU_REQUEST, this::handleDeleteMenuRequest);
+        commandMap.put(Constants.VIEW_MENU_REQUEST, this::handleViewMenuRequest);
+        commandMap.put(Constants.VIEW_TOP_RECOMMENDATIONS, this::handleViewTopRecommendationsRequest);
+        commandMap.put(Constants.VIEW_CHEF_RECOMMENDATIONS, this::handleViewChefRecommendationsRequest);
+        commandMap.put(Constants.VOTE_RECOMMENDATION_REQUEST, this::handleVoteRecommendationRequest);
+        commandMap.put(Constants.VIEW_VOTED_REPORT, this::handleViewVotedReportRequest);
+        commandMap.put(Constants.ROLLOUT_NEXT_DAY_MENU_REQUEST, this::handleRollOutNextDayMenuRequest);
+        commandMap.put(Constants.GIVE_FEEDBACK_REQUEST, this::handleGiveFeedbackRequest);
+        commandMap.put(Constants.USER_SESSION_REQUEST, this::handleUserSessionRequest);
+        commandMap.put(Constants.VIEW_NOTIFICATIONS_REQUEST, this::handleViewNotificationsRequest);
+        commandMap.put(Constants.DISCARD_MENU_REQUEST, this::handleDiscardMenuRequest);
+        commandMap.put(Constants.DISCARD_FEEDBACK_DETAILS_REQUEST_FOR_EMPLOYEE, this::handleDiscardFeedbackEmployeeActions);
     }
 
     public void run() {
-
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
-
+        try {
             String request;
             while ((request = in.readLine()) != null) {
                 System.out.println(request);
                 String[] parts = request.split(";", 2);
                 String requestType = parts[0];
                 String requestData = parts.length > 1 ? parts[1] : "";
+                Command command = commandMap.get(requestType);
 
-                switch (requestType) {
-                    case "LOGIN_REQUEST":
-                        handleLoginRequest(requestData, out);
-                        break;
-                    case "ADD_MENU_REQUEST":
-                        handleAddMenuRequest(requestData, out);
-                        break;
-                    case "UPDATE_MENU_REQUEST":
-                        handleUpdateMenuRequest(requestData, out);
-                        break;
-                    case "DELETE_MENU_REQUEST":
-                        handleDeleteMenuRequest(requestData, out);
-                        break;
-                    case "VIEW_MENU_REQUEST":
-                        handleViewMenuRequest(out);
-                        break;
-                    case "VIEW_TOP_RECOMMENDATIONS":
-                        handleViewTopRecommendationsRequest(requestData,out);
-                        break;
-                    case "VIEW_CHEF_RECOMMENDATIONS":
-                        handleViewChefRecommendationsRequest(out);
-                        break;
-                    case "VOTE_RECOMMENDATION_REQUEST":
-                        handleVoteRecommendationRequest(requestData, out);
-                        break;
-                    case "VIEW_VOTED_REPORT":
-                        handleViewVotedReportRequest(out);
-                        break;
-                    case "ROLLOUT_NEXT_DAY_MENU_REQUEST":
-                        handleRollOutNextDayMenuRequest(parts, out);
-                        break;
-                    case "GIVE_FEEDBACK_REQUEST":
-                        handleGiveFeedbackRequest(parts[1], out);
-                        break;
-                    case "USER_SESSION_REQUEST":
-                        handleUserSessionRequest(parts[1]);
-                        break;
-                    case "VIEW_NOTIFICATIONS_REQUEST":
-                        handleViewNotificationsRequest(out);
-                    default:
-                        out.println("UNKNOWN_REQUEST");
+                if (command != null) {
+                    command.execute(requestData);
+                } else {
+                    out.println("UNKNOWN_REQUEST");
                 }
             }
         } catch (IOException e) {
-            System.out.println("Error: " + e.getMessage());
+            System.err.println("Error: " + e.getMessage());
         } finally {
             System.out.println("Executed Finally");
         }
     }
 
-    private void handleLoginRequest(String requestData, PrintWriter out) {
+    private void handleLoginRequest(String requestData) {
         String[] parts = requestData.split(";");
         if (parts.length == 2) {
             String employeeId = parts[0];
@@ -108,9 +98,9 @@ public class ClientHandler extends Thread {
         }
     }
 
-    private void handleAddMenuRequest(String requestData, PrintWriter out) {
+    private void handleAddMenuRequest(String requestData) {
         Gson gson = new Gson();
-        MenuDTO menu = gson.fromJson(requestData, MenuDTO.class);
+        Menu menu = gson.fromJson(requestData, Menu.class);
         menu.setAvailabilityStatus("Yes");
         menu.setScore(new BigDecimal(0));
         boolean success = menuService.addMenu(menu);
@@ -122,9 +112,9 @@ public class ClientHandler extends Thread {
         }
     }
 
-    private void handleUpdateMenuRequest(String requestData, PrintWriter out) {
+    private void handleUpdateMenuRequest(String requestData) {
         Gson gson = new Gson();
-        MenuDTO menu = gson.fromJson(requestData, MenuDTO.class);
+        Menu menu = gson.fromJson(requestData, Menu.class);
         boolean success = menuService.updateMenu(menu);
 
         if (success) {
@@ -134,7 +124,7 @@ public class ClientHandler extends Thread {
         }
     }
 
-    private void handleDeleteMenuRequest(String requestData, PrintWriter out) {
+    private void handleDeleteMenuRequest(String requestData) {
         boolean success = menuService.deleteMenu(requestData);
 
         if (success) {
@@ -144,117 +134,194 @@ public class ClientHandler extends Thread {
         }
     }
 
-    private void handleViewMenuRequest(PrintWriter out) {
+    private void handleViewMenuRequest(String requestData) {
         try {
             String menuList = menuService.viewMenu();
             out.println("VIEW_MENU_RESPONSE;" + menuList);
         } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
+            out.println("VIEW_MENU_RESPONSE;FAILURE;Error retrieving menu");
+            System.err.println("Error: " + e.getMessage());
         }
     }
 
-    private void handleViewTopRecommendationsRequest(String requestData, PrintWriter out) {
+    private void handleViewTopRecommendationsRequest(String requestData) {
         feedbackService.updateMenuScoresAccToFeedback();
         String recommendations = menuService.viewTopRecommendations(requestData);
         out.println(recommendations);
     }
 
-    private void handleViewChefRecommendationsRequest(PrintWriter out) {
+    private void handleViewChefRecommendationsRequest(String requestData) {
         try {
-            List<ChefRecommendationDTO> recommendations = chefRecommendationService.getChefRecommendations();
+            List<ChefRecommendation> recommendations = chefRecommendationService.getChefRecommendations();
             StringBuilder response = new StringBuilder("VIEW_RECOMMENDATIONS_RESPONSE");
-            for (ChefRecommendationDTO recommendation : recommendations) {
+            for (ChefRecommendation recommendation : recommendations) {
                 response.append(";")
                         .append("MenuId: ").append(recommendation.getMenuId())
                         .append(", MenuName: ").append(recommendation.getMenuName())
                         .append(", Score: ").append(recommendation.getVoteCount());
             }
             out.println(response);
-        }catch(Exception error){
-            System.err.println(error.getMessage());
+        } catch (Exception e) {
+            out.println("VIEW_RECOMMENDATIONS_RESPONSE;FAILURE;Error retrieving recommendations");
+            System.err.println("Error: " + e.getMessage());
         }
     }
 
-    private void handleVoteRecommendationRequest(String requestData, PrintWriter out) {
+    private void handleVoteRecommendationRequest(String requestData) {
         try {
             String[] parts = requestData.split(";");
             String[] menuIds = parts[0].split(",");
             String employeeId = parts[1];
             chefRecommendationService.voteForRecommendations(menuIds, employeeId);
             out.println("VOTE_RECOMMENDATION_RESPONSE;SUCCESS");
-        }catch (VoteAlreadyGivenException e) {
+        } catch (VoteAlreadyGivenException | SQLException e) {
             out.println("VOTE_RECOMMENDATION_RESPONSE;FAILURE;" + e.getMessage());
-        }catch (SQLException e) {
-            out.println("VOTE_RECOMMENDATION_RESPONSE;FAILURE" + e.getMessage());
         }
     }
 
-    private void handleViewVotedReportRequest(PrintWriter out) {
-        List<ChefRecommendationDTO> recommendations = chefRecommendationService.getTodayChefRecommendations();
-        StringBuilder response = new StringBuilder("VOTED_REPORT");
-        for (ChefRecommendationDTO recommendation : recommendations) {
-            response.append(";")
-                    .append("RecId: ").append(recommendation.getRecId())
-                    .append(", MenuId: ").append(recommendation.getMenuId())
-                    .append(", VoteCount: ").append(recommendation.getVoteCount())
-                    .append(", CreatedDate: ").append(recommendation.getCreatedDate());
+    private void handleViewVotedReportRequest(String requestData) {
+        try {
+            List<ChefRecommendation> recommendations = chefRecommendationService.getTodayChefRecommendations();
+            StringBuilder response = new StringBuilder("VOTED_REPORT");
+            for (ChefRecommendation recommendation : recommendations) {
+                response.append(";")
+                        .append("RecId: ").append(recommendation.getRecId())
+                        .append(", MenuId: ").append(recommendation.getMenuId())
+                        .append(", VoteCount: ").append(recommendation.getVoteCount())
+                        .append(", CreatedDate: ").append(recommendation.getCreatedDate());
+            }
+            out.println(response);
+        } catch (Exception e) {
+            out.println("VOTED_REPORT;FAILURE;Error retrieving voted report");
+            System.err.println("Error: " + e.getMessage());
         }
-        out.println(response);
     }
 
-    private void handleRollOutNextDayMenuRequest(String[] parts, PrintWriter out) {
-        String[] menuIds = parts[1].split(",");
-        boolean success = chefRecommendationService.rollOutNextDayMenu(menuIds);
+    private void handleRollOutNextDayMenuRequest(String requestData) {
+        String[] parts = requestData.split(",");
+        boolean success = chefRecommendationService.rollOutNextDayMenu(parts);
         if (success) {
             out.println("ROLLOUT_NEXT_DAY_MENU_RESPONSE;SUCCESS");
         } else {
-            out.println("ROLLOUT_NEXT_DAY_MENU_RESPONSE;FAILURE");
+            out.println("ROLLOUT_NEXT_DAY_MENU_RESPONSE;FAILURE;Error rolling out next day menu");
         }
     }
 
-    private void handleGiveFeedbackRequest(String jsonFeedback, PrintWriter out) {
+    private void handleGiveFeedbackRequest(String requestData) {
         try {
             Gson gson = new Gson();
-            FeedbackDTO feedbackDTO = gson.fromJson(jsonFeedback, FeedbackDTO.class);
-            String employeeId = feedbackDTO.getEmployeeId();
-            Integer menuId = feedbackDTO.getMenuId();
-            String comment = feedbackDTO.getComment();
-            int rating = feedbackDTO.getRating();
+            Feedback feedback = gson.fromJson(requestData, Feedback.class);
+            String employeeId = feedback.getEmployeeId();
+            Integer menuId = feedback.getMenuId();
+            String comment = feedback.getComment();
+            int rating = feedback.getRating();
 
             feedbackService.submitFeedback(employeeId, menuId, comment, rating);
             out.println("GIVE_FEEDBACK_RESPONSE;SUCCESS");
-        }catch (FeedbackAlreadyExistsException e) {
+        } catch (FeedbackAlreadyExistsException e) {
             out.println("GIVE_FEEDBACK_RESPONSE;FAILURE;" + e.getMessage());
-        }catch (Exception e) {
-            System.err.println();
-            out.println("GIVE_FEEDBACK_RESPONSE;FAILURE" + e.getMessage());
-        }
-      }
-
-    private void handleUserSessionRequest(String data) {
-        Gson gson = new Gson();
-        UserSessionDTO sessionDTO = gson.fromJson(data, UserSessionDTO.class);
-
-        try {
-            userSessionService.logUserSession(sessionDTO);
-            System.out.println("User Session Successfully recorded");
-        } catch (SQLException e) {
-            System.err.println("User Session Successfully recorded");
+        } catch (Exception e) {
+            out.println("GIVE_FEEDBACK_RESPONSE;FAILURE;Error submitting feedback");
+            System.err.println("Error: " + e.getMessage());
         }
     }
 
-    private void handleViewNotificationsRequest(PrintWriter out) {
+    private void handleUserSessionRequest(String requestData) {
+        Gson gson = new Gson();
+        UserSession sessionDTO = gson.fromJson(requestData, UserSession.class);
+
         try {
-            List<NotificationDTO> notifications = notificationService.getTodayNotifications();
+            userSessionService.logUserSession(sessionDTO);
+            System.out.println("USER_SESSION_RESPONSE;SUCCESS");
+        } catch (SQLException e) {
+            out.println("USER_SESSION_RESPONSE;FAILURE;Error logging user session");
+            System.err.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void handleViewNotificationsRequest(String requestData) {
+        try {
+            List<Notification> notifications = notificationService.getTodayNotifications();
 
             StringBuilder response = new StringBuilder("VIEW_NOTIFICATIONS_RESPONSE");
-            for (NotificationDTO notification : notifications) {
+            for (Notification notification : notifications) {
                 String message = notification.getMessage();
                 response.append(";").append(message);
             }
             out.println(response);
         } catch (SQLException e) {
-            out.println("VIEW_NOTIFICATIONS_RESPONSE;FAILURE");
+            out.println("VIEW_NOTIFICATIONS_RESPONSE;FAILURE;Error retrieving notifications");
+            System.err.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void handleDiscardMenuRequest(String requestData) {
+        try {
+            Map<Triplet<Integer, Double, String>, List<String>> lowRatedMenuItems = feedbackService.getLowRatedMenuItems();
+            sendLowRatedMenuItemsResponse(lowRatedMenuItems);
+
+            String selectedMenuItem = in.readLine();
+            if (checkSelectedItemPresent(lowRatedMenuItems.keySet(), selectedMenuItem)) {
+                out.println("DISCARD_MENU_ACTION;VALID");
+                processUserAction(selectedMenuItem);
+            } else {
+                out.println("DISCARD_MENU_ACTION;INVALID;Wrong Menu Id");
+            }
+        } catch (Exception e) {
+            out.println("DISCARD_MENU_RESPONSE;FAILURE;Error discarding menu item");
+            System.err.println("Error: " + e.getMessage());
+        }
+    }
+
+    private boolean checkSelectedItemPresent(Set<Triplet<Integer, Double, String>> keys, String selectedMenuItem) {
+        return keys.stream().anyMatch(key -> key.contains(Integer.parseInt(selectedMenuItem)));
+    }
+
+    private void sendLowRatedMenuItemsResponse(Map<Triplet<Integer, Double, String>, List<String>> lowRatedMenuItems) {
+        StringBuilder response = new StringBuilder("DISCARD_MENU_RESPONSE");
+        for (Map.Entry<Triplet<Integer, Double, String>, List<String>> entry : lowRatedMenuItems.entrySet()) {
+            response.append(";").append(entry.getKey());
+            for (String comment : entry.getValue()) {
+                response.append(";").append(comment);
+            }
+        }
+        out.println(response);
+    }
+
+    private void processUserAction(String selectedMenuItem) {
+        try {
+            String action = in.readLine();
+            if ("1".equals(action)) {
+                feedbackService.deleteMenuItem(selectedMenuItem);
+                out.println("DISCARD_MENU_RESULT;SUCCESS;Item removed successfully");
+            } else if ("2".equals(action)) {
+                String discardFeedbackResponse = in.readLine();
+                String[] parts = discardFeedbackResponse.split(";");
+                if (parts[0].equals("DISCARD_FEEDBACK_DETAILS_REQUEST_FOR_ADMIN_CHEF")) {
+                    String menuId = parts[1];
+                    String questions =
+                            "Q1. What you not like about " + menuId + "?;" +
+                                    "Q2. How would you like " + menuId + " to taste?;" +
+                                    "Q3. Share your mom’s recipe";
+                    discardFeedbackService.submitDiscardFeedback(questions, menuId);
+                }
+            }
+        } catch (IOException | SQLException e) {
+            out.println("DISCARD_MENU_RESULT;FAILURE;Error processing user action");
+            System.err.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void handleDiscardFeedbackEmployeeActions(String requestData) {
+        try {
+            Map<Integer, String> menuIdwithQuestionMap = discardFeedbackService.getTodayFeedbackDetails();
+            String response = menuIdwithQuestionMap.keySet().stream()
+                    .map(key -> key + "=" + menuIdwithQuestionMap.get(key))
+                    .collect(Collectors.joining(", ", "{", "}"));
+            out.println(response);
+        } catch (Exception e) {
+            out.println("DISCARD_FEEDBACK_DETAILS_RESPONSE_FOR_EMPLOYEE;FAILURE;Error retrieving feedback details");
+            System.err.println("Error: " + e.getMessage());
         }
     }
 }

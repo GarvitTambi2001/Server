@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class ClientHandler extends Thread {
     private final BufferedReader in;
     private final PrintWriter out;
+    private String employeeId;
     private final AuthService authService;
     private final MenuService menuService;
     private final FeedbackService feedbackService;
@@ -24,6 +25,7 @@ public class ClientHandler extends Thread {
     private final UserSessionService userSessionService;
     private final NotificationService notificationService;
     private final DiscardFeedbackService discardFeedbackService;
+    private final ProfileService profileService;
     private final Map<String, Command> commandMap;
 
     public ClientHandler(Socket socket) throws IOException {
@@ -34,6 +36,7 @@ public class ClientHandler extends Thread {
         this.userSessionService = new UserSessionService();
         this.notificationService = new NotificationService();
         this.discardFeedbackService = new DiscardFeedbackService();
+        this.profileService = new ProfileService();
         this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         this.out = new PrintWriter(socket.getOutputStream(), true);
         this.commandMap = new HashMap<>();
@@ -56,6 +59,8 @@ public class ClientHandler extends Thread {
         commandMap.put(Constants.VIEW_NOTIFICATIONS_REQUEST, this::handleViewNotificationsRequest);
         commandMap.put(Constants.DISCARD_MENU_REQUEST, this::handleDiscardMenuRequest);
         commandMap.put(Constants.DISCARD_FEEDBACK_DETAILS_REQUEST_FOR_EMPLOYEE, this::handleDiscardFeedbackEmployeeActions);
+        commandMap.put(Constants.UPDATE_PROFILE_REQUEST, this::handleUpdateProfileRequest);
+
     }
 
     public void run() {
@@ -84,7 +89,7 @@ public class ClientHandler extends Thread {
     private void handleLoginRequest(String requestData) {
         String[] parts = requestData.split(";");
         if (parts.length == 2) {
-            String employeeId = parts[0];
+            employeeId = parts[0];
             String password = parts[1];
             User user = authService.authenticate(employeeId, password);
 
@@ -152,7 +157,7 @@ public class ClientHandler extends Thread {
 
     private void handleViewChefRecommendationsRequest(String requestData) {
         try {
-            List<ChefRecommendation> recommendations = chefRecommendationService.getChefRecommendations();
+            List<ChefRecommendation> recommendations = chefRecommendationService.getChefRecommendations(employeeId);
             StringBuilder response = new StringBuilder("VIEW_RECOMMENDATIONS_RESPONSE");
             for (ChefRecommendation recommendation : recommendations) {
                 response.append(";")
@@ -181,7 +186,7 @@ public class ClientHandler extends Thread {
 
     private void handleViewVotedReportRequest(String requestData) {
         try {
-            List<ChefRecommendation> recommendations = chefRecommendationService.getTodayChefRecommendations();
+            List<ChefRecommendation> recommendations = chefRecommendationService.getVotedChefRecommendations();
             StringBuilder response = new StringBuilder("VOTED_REPORT");
             for (ChefRecommendation recommendation : recommendations) {
                 response.append(";")
@@ -322,6 +327,21 @@ public class ClientHandler extends Thread {
         } catch (Exception e) {
             out.println("DISCARD_FEEDBACK_DETAILS_RESPONSE_FOR_EMPLOYEE;FAILURE;Error retrieving feedback details");
             System.err.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void handleUpdateProfileRequest(String requestData) {
+        try {
+            Gson gson = new Gson();
+            Profile profile = gson.fromJson(requestData, Profile.class);
+            boolean success = profileService.updateOrCreateProfile(profile);
+            if (success) {
+                out.println("UPDATE_PROFILE_RESPONSE;SUCCESS;Profile added successfully");
+            } else {
+                out.println("UPDATE_PROFILE_RESPONSE;FAILURE;Failed to Update Profile");
+            }
+        }catch(SQLException e){
+            out.println("UPDATE_PROFILE_RESPONSE;FAILURE;Error Retrieving your Profile");
         }
     }
 }

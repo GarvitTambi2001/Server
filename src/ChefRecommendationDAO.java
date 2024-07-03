@@ -46,29 +46,39 @@ public class ChefRecommendationDAO {
     }
 
 
-    public List<ChefRecommendation> getChefRecommendations() {
+    public List<ChefRecommendation> getChefRecommendations(Profile profile) {
         List<ChefRecommendation> recommendations = new ArrayList<>();
-        String query = "SELECT cr.MenuId, m.Name AS MenuName, m.Score AS score, cr.VoteCount "
-                + "FROM ChefRecommendation cr "
-                + "JOIN Menu m ON cr.MenuId = m.MenuId "
-                + "WHERE DATE(cr.CreatedDate) = CURDATE() "
-                + "ORDER BY cr.VoteCount DESC";
+        String query = "SELECT cr.MenuId, m.Name AS MenuName, m.Score AS score, cr.VoteCount, " +
+                "m.Diet, m.Spice, m.CuisineType , m.SweetTooth " +
+                "FROM ChefRecommendation cr " +
+                "JOIN Menu m ON cr.MenuId = m.MenuId " +
+                "WHERE DATE(cr.CreatedDate) = CURDATE() " +
+                "ORDER BY (CASE WHEN m.Diet = ? THEN 0 ELSE 1 END), " +
+                "(CASE WHEN m.Spice = ? THEN 0 ELSE 1 END), " +
+                "(CASE WHEN m.CuisineType  = ? THEN 0 ELSE 1 END), " +
+                "(CASE WHEN m.SweetTooth = ? THEN 0 ELSE 1 END), cr.VoteCount DESC";
 
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(query);
-             ResultSet resultSet = statement.executeQuery()) {
+             PreparedStatement statement = connection.prepareStatement(query)) {
 
-            while (resultSet.next()) {
-                ChefRecommendation recommendation = new ChefRecommendation();
-                recommendation.setMenuId(resultSet.getInt("MenuId"));
-                recommendation.setMenuName(resultSet.getString("MenuName"));
-                recommendation.setScore(resultSet.getBigDecimal("score"));
-                recommendation.setVoteCount(resultSet.getInt("VoteCount"));
+            statement.setString(1, profile.getDiet());
+            statement.setString(2, profile.getSpice());
+            statement.setString(3, profile.getCuisineType());
+            statement.setString(4, profile.getSweetTooth());
 
-                recommendations.add(recommendation);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    ChefRecommendation recommendation = new ChefRecommendation();
+                    recommendation.setMenuId(resultSet.getInt("MenuId"));
+                    recommendation.setMenuName(resultSet.getString("MenuName"));
+                    recommendation.setScore(resultSet.getBigDecimal("score"));
+                    recommendation.setVoteCount(resultSet.getInt("VoteCount"));
+
+                    recommendations.add(recommendation);
+                }
             }
         } catch (SQLException e) {
-            System.err.println("Error fetching recommendations: " + e.getMessage());
+            throw new RuntimeException(e);
         }
         return recommendations;
     }
@@ -86,7 +96,7 @@ public class ChefRecommendationDAO {
         }
     }
 
-    public List<ChefRecommendation> getTodayChefRecommendations() {
+    public List<ChefRecommendation> getVotedChefRecommendations() throws SQLException {
         List<ChefRecommendation> recommendations = new ArrayList<>();
         String query = "SELECT * FROM ChefRecommendation WHERE DATE(CreatedDate) >= CURDATE()";
 
@@ -103,8 +113,6 @@ public class ChefRecommendationDAO {
 
                 recommendations.add(recommendation);
             }
-        } catch (SQLException e) {
-            System.err.println("Error fetching today's recommendations: " + e.getMessage());
         }
         return recommendations;
     }

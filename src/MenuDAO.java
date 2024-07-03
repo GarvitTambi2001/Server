@@ -6,7 +6,7 @@ import java.util.List;
 public class MenuDAO {
 
     public boolean addMenu(Menu menu) {
-        String query = "INSERT INTO menu (Name, Price, AvailabilityStatus, MealType, Score) VALUES (?, ?, ?, ?, ?)";
+        String query = "INSERT INTO menu (Name, Price, AvailabilityStatus, MealType, Score, Diet, Spice, CuisineType, SweetTooth) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, menu.getName());
@@ -14,6 +14,10 @@ public class MenuDAO {
             preparedStatement.setString(3, menu.getAvailabilityStatus());
             preparedStatement.setString(4, menu.getMealType());
             preparedStatement.setBigDecimal(5, menu.getScore());
+            preparedStatement.setString(6, menu.getDiet());
+            preparedStatement.setString(7, menu.getSpice());
+            preparedStatement.setString(8, menu.getCuisineType());
+            preparedStatement.setString(9, menu.getSweetTooth());
             preparedStatement.executeUpdate();
             return true;
         } catch (SQLException e) {
@@ -23,14 +27,18 @@ public class MenuDAO {
     }
 
     public boolean updateMenu(Menu menu) {
-        String query = "UPDATE menu SET Name = ?, Price = ?, AvailabilityStatus = ?, MealType = ? WHERE MenuId = ?";
+        String query = "UPDATE menu SET Name = ?, Price = ?, AvailabilityStatus = ?, MealType = ?, Diet = ?, Spice = ?, CuisineType = ?, SweetTooth = ? WHERE MenuId = ?";
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, menu.getName());
             preparedStatement.setBigDecimal(2, menu.getPrice());
             preparedStatement.setString(3, menu.getAvailabilityStatus());
             preparedStatement.setString(4, menu.getMealType());
-            preparedStatement.setBigDecimal(5, menu.getMenuId());
+            preparedStatement.setString(5, menu.getDiet());
+            preparedStatement.setString(6, menu.getSpice());
+            preparedStatement.setString(7, menu.getCuisineType());
+            preparedStatement.setString(8, menu.getSweetTooth());
+            preparedStatement.setBigDecimal(9, menu.getMenuId());
             preparedStatement.executeUpdate();
             return true;
         } catch (SQLException e) {
@@ -66,6 +74,10 @@ public class MenuDAO {
                 menu.setMealType(resultSet.getString("MealType"));
                 menu.setScore(resultSet.getBigDecimal("Score"));
                 menu.setName(resultSet.getString("Name"));
+                menu.setDiet(resultSet.getString("Diet"));
+                menu.setSpice(resultSet.getString("Spice"));
+                menu.setCuisineType(resultSet.getString("CuisineType"));
+                menu.setSweetTooth(resultSet.getString("SweetTooth"));
                 menus.add(menu);
             }
         } catch (SQLException e) {

@@ -39,8 +39,7 @@ public class MenuDAO {
             preparedStatement.setString(7, menu.getCuisineType());
             preparedStatement.setString(8, menu.getSweetTooth());
             preparedStatement.setBigDecimal(9, menu.getMenuId());
-            preparedStatement.executeUpdate();
-            return true;
+            return preparedStatement.executeUpdate() > 0;
         } catch (SQLException e) {
             System.out.println("Error: " + e.getMessage());
             return false;

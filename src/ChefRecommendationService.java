@@ -20,20 +20,17 @@ public class ChefRecommendationService {
     }
 
     public void voteForRecommendations(String[] menuIds, String employeeId) throws VoteAlreadyGivenException, SQLException {
-            for (String menuId : menuIds) {
-                chefRecommendationDAO.increaseVoteCount(Integer.parseInt(menuId), employeeId);
-            }
+        for (String menuId : menuIds) {
+            chefRecommendationDAO.increaseVoteCount(Integer.parseInt(menuId), employeeId);
+        }
     }
 
     public boolean rollOutNextDayMenu(String[] menuIds) {
-        try {
-            for (String menuId : menuIds) {
-                chefRecommendationDAO.insertChefRecommendation(Integer.parseInt(menuId));
+        for (String menuId : menuIds) {
+            if (!chefRecommendationDAO.insertChefRecommendation(Integer.parseInt(menuId))) {
+                return false;
             }
-            return true;
-        } catch (NumberFormatException e) {
-            System.err.println("Invalid MenuId format: " + e.getMessage());
-            return false;
         }
+        return true;
     }
 }

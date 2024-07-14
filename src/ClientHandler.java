@@ -179,8 +179,10 @@ public class ClientHandler extends Thread {
             String employeeId = parts[1];
             chefRecommendationService.voteForRecommendations(menuIds, employeeId);
             out.println("VOTE_RECOMMENDATION_RESPONSE;SUCCESS");
-        } catch (VoteAlreadyGivenException | SQLException e) {
+        } catch (VoteAlreadyGivenException e) {
             out.println("VOTE_RECOMMENDATION_RESPONSE;FAILURE;" + e.getMessage());
+        }catch (SQLException e){
+            out.println("VOTE_RECOMMENDATION_RESPONSE;FAILURE;" + "Please Check Your Data or Contact IT Team");
         }
     }
 

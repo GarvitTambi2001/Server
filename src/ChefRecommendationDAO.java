@@ -83,16 +83,17 @@ public class ChefRecommendationDAO {
         return recommendations;
     }
 
-    public void insertChefRecommendation(int menuId) {
+    public boolean insertChefRecommendation(int menuId) {
         String query = "INSERT INTO ChefRecommendation (MenuId, VoteCount, CreatedDate) VALUES (?, 0, CURDATE())";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
 
             statement.setInt(1, menuId);
-            statement.executeUpdate();
+            return statement.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error inserting chef recommendation: " + e.getMessage());
+            return false;
         }
     }
 

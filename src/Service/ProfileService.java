@@ -12,7 +12,7 @@ public class ProfileService {
 
     public boolean updateOrCreateProfile(Profile profile) throws SQLException {
         Profile existingProfile = profileDAO.getProfileByEmployeeId(profile.getEmployeeId());
-        if (existingProfile == null) {
+        if (existingProfile.getEmployeeId() == null) {
             return profileDAO.createProfile(profile);
         } else {
             return profileDAO.updateProfile(profile);

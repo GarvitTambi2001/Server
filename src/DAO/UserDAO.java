@@ -27,7 +27,7 @@ public class UserDAO {
         } catch (SQLException e) {
             System.err.println("Database error: " + e.getMessage());
         }
-        return null;
+        return new User();
     }
 
     private User mapToUser(ResultSet resultSet) throws SQLException {

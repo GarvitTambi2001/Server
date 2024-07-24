@@ -25,7 +25,7 @@ public class ProfileDAO {
                     profile.setSweetTooth(resultSet.getString("SweetTooth"));
                     return profile;
                 }else {
-                    return null;
+                    return new Profile();
                 }
             }
         }

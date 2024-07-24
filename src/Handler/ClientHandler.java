@@ -101,7 +101,7 @@ public class ClientHandler extends Thread {
             String password = parts[1];
             User user = authService.authenticate(employeeId, password);
 
-            if (user != null) {
+            if (user.getRoleName() != null) {
                 out.println("LOGIN_RESPONSE;SUCCESS;Login successful, Role: " + user.getRoleName() + ";" + user.getRoleName());
             } else {
                 out.println("LOGIN_RESPONSE;FAILURE;Incorrect EmployeeId/Password");
